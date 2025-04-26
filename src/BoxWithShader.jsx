@@ -96,11 +96,11 @@ const fragmentShader = `
 
       float dist = distance(finalColor, vec3(0.0));
 
-      if (dist <= 0.2) {
-        finalColor = vec3(0.0);
-       }
+      // if (dist <= 0.2) {
+      //   finalColor = vec3(0.0);
+      //  }
       
-      gl_FragColor = vec4(baseColor, 1.0);
+      gl_FragColor = vec4(finalColor, 1.0);
   }
 `
 
@@ -159,7 +159,7 @@ export default function boxWithShader() {
 
   return (
     <mesh position={[0,0,0]}>
-      <boxGeometry args={[5, 5,5,64, 64,64]} />
+      <boxGeometry args={[4,4,4,64, 64,64]} />
       <shaderMaterial
         ref={shaderRef}
         vertexShader={vertexShader}
