@@ -1,25 +1,30 @@
 import react from '@vitejs/plugin-react'
 import { transformWithEsbuild } from 'vite'
 import restart from 'vite-plugin-restart'
+import glsl from 'vite-plugin-glsl'
 
 export default {
     root: 'src/',
     publicDir: '../public/',
-    plugins:
-    [
-        // Restart server on static/public file change
-        restart({ restart: [ '../public/**', ] }),
+    plugins: [
+        // Reinicia el servidor al cambiar archivos públicos
+        restart({ restart: ['../public/**'] }),
 
-        // React support
+        // Soporte para React
         react(),
 
-        // .js file support as if it was JSX
+        // Soporte para shaders con #include y #define
+        glsl({
+            include: /\.(glsl|wgsl|vert|frag|vs|fs)$/, // extensiones soportadas
+            defaultExtension: 'glsl', // opcional
+            compress: false, // para debugging, no minifica
+        }),
+
+        // Carga archivos .js como si fueran JSX
         {
             name: 'load+transform-js-files-as-jsx',
-            async transform(code, id)
-            {
-                if (!id.match(/src\/.*\.js$/))
-                    return null
+            async transform(code, id) {
+                if (!id.match(/src\/.*\.js$/)) return null
 
                 return transformWithEsbuild(code, id, {
                     loader: 'jsx',
@@ -28,15 +33,13 @@ export default {
             },
         },
     ],
-    server:
-    {
-        host: true, // Open to local network and display URL
-        open: !('SANDBOX_URL' in process.env || 'CODESANDBOX_HOST' in process.env) // Open if it's not a CodeSandbox
+    server: {
+        host: true,
+        open: !('SANDBOX_URL' in process.env || 'CODESANDBOX_HOST' in process.env),
     },
-    build:
-    {
-        outDir: '../dist', // Output in the dist/ folder
-        emptyOutDir: true, // Empty the folder first
-        sourcemap: true // Add sourcemap
+    build: {
+        outDir: '../dist',
+        emptyOutDir: true,
+        sourcemap: true,
     },
 }
