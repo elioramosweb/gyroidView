@@ -1,48 +1,51 @@
-import { useRef } from 'react'
-import { useFrame } from '@react-three/fiber'
-import { DoubleSide } from 'three'
-import vertexShader from './shaders/vertex.glsl'
-import fragmentShader from './shaders/fragment.glsl'
+import React, { useRef, useMemo } from 'react'
+import { useFrame }            from '@react-three/fiber'
+import * as THREE              from 'three'
+import { DoubleSide }          from 'three'
+import vertexShader            from './shaders/vertex.glsl'
+import fragmentShader          from './shaders/fragment.glsl'
 
-export default function BoxWithShader({ params }) {
-  const shaderRef = useRef()
-  const meshRef = useRef()
+export default function BoxWithShader({ params, displaceZ = 0 }) {
+  const matRef = useRef()
+  // 1) Desestructuramos para que React rastree cambios en 'thickness'
+  const { thickness, blackFilter, whiteFilter } = params.current
+
+  // 2) Ahora useMemo sí se volverá a ejecutar cuando cambie 'thickness'
+  const geometry = useMemo(
+    () => new THREE.BoxGeometry(4, 4, thickness, 64, 64, 64),
+    [thickness]
+  )
 
   useFrame(({ clock }) => {
-    if (shaderRef.current) {
-      shaderRef.current.uniforms.uTime.value = clock.getElapsedTime()
-      shaderRef.current.uniforms.uZoom.value = params.current.zoom
-      shaderRef.current.uniforms.uDisplaceX.value = params.current.displaceX
-      shaderRef.current.uniforms.uDisplaceY.value = params.current.displaceY
-      shaderRef.current.uniforms.uDisplaceZ.value = params.current.displaceZ
-    }
+    const mat = matRef.current
+    if (!mat) return
 
-
-    if (meshRef.current) {
-      meshRef.current.position.x = 0
-      meshRef.current.position.y = 0
-      meshRef.current.position.z = params.current.posZ
-    }
-
+    mat.uniforms.uTime.value      = clock.getElapsedTime()
+    mat.uniforms.uZoom.value      = params.current.zoom
+    mat.uniforms.uDisplaceX.value = params.current.displaceX
+    mat.uniforms.uDisplaceY.value = params.current.displaceY
+    mat.uniforms.uDisplaceZ.value = displaceZ
+    // 3) Usamos las variables desestructuradas para los filtros
+    mat.uniforms.uBlack.value     = blackFilter
+    mat.uniforms.uWhite.value     = whiteFilter
   })
 
-
-
   return (
-    <mesh ref={meshRef}>
-      <boxGeometry args={[4, 4, 0.1, 64, 64, 64]} />
+    <mesh geometry={geometry} position={[0, 0, displaceZ]}>
       <shaderMaterial
-        ref={shaderRef}
+        ref={matRef}
         vertexShader={vertexShader}
         fragmentShader={fragmentShader}
+        side={DoubleSide}
         uniforms={{
-          uTime: { value: 0 },
-          uZoom: { value: params.current.zoom},
+          uTime:      { value: 0 },
+          uZoom:      { value: params.current.zoom },
           uDisplaceX: { value: params.current.displaceX },
           uDisplaceY: { value: params.current.displaceY },
-          uDisplaceZ: { value: params.current.displaceZ },
+          uDisplaceZ: { value: displaceZ },
+          uBlack:     { value: blackFilter },
+          uWhite:     { value: whiteFilter },
         }}
-        side={DoubleSide}
       />
     </mesh>
   )

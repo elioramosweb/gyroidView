@@ -8,12 +8,13 @@ uniform float uZoom;
 uniform float uDisplaceX;
 uniform float uDisplaceY;
 uniform float uDisplaceZ;
-uniform float uZPos;
+uniform float uBlack;
+uniform float uWhite;
 
 varying vec2  vUv;
 varying vec3  vPosition;
 
-#define NMAX 500
+#define NMAX 100
 
 float lyapunov(vec3 coord) {
     float x = 0.5;
@@ -50,7 +51,7 @@ vec3 palette(float t) {
 
 void main() {
 
-    vec3 coord = (vPosition) * uZoom;
+    vec3 coord = (vPosition + vec3(uDisplaceX,uDisplaceY,uDisplaceZ)) * uZoom;
         
     float val = smoothstep(-1.0, 1.0,lyapunov(coord));
 
@@ -60,6 +61,19 @@ void main() {
       // }
 
     vec3 color = palette(val);
+
+    float dist1 = distance(color,vec3(1.0));
+    float dist2 = distance(color,vec3(0.0));
+
+    if (dist1 < uWhite)
+    {
+        discard;
+    }
+
+    if (dist2 < uBlack)
+    {
+        discard;
+    }
 
     gl_FragColor = vec4(color, 1.0);
 }
