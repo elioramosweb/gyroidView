@@ -77,7 +77,7 @@ export default function Scene() {
   return (
     <group>
       <BoxWithShader params={params}/>
-      {/* <CrystalBox zMin={zMin} zMax={zMax} />  */}
+      <CrystalBox/>  
     </group>
   )
 

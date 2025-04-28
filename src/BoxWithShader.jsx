@@ -8,8 +8,8 @@ import fragmentShader   from './shaders/fragment.glsl'
 export default function BoxWithShader({
   params,            // ref con zoom, displaceX/Y/Z, blackFilter, whiteFilter
   size = 4,          // lado del cubo original
-  cuts = 50,          // número de cortes (planos en XY)
-  gap  = 0.4         // tamaño del hueco entre secciones
+  cuts = 10,          // número de cortes (planos en XY)
+  gap  = 0.5         // tamaño del hueco entre secciones
 }) {
   const pieces    = cuts + 1
   const thickness = (size - cuts * gap) / pieces

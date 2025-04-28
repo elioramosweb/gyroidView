@@ -1,99 +1,59 @@
-// SphereWithShader.jsx
-import { useRef,useMemo} from 'react'
-import { useFrame } from '@react-three/fiber'
-import * as THREE from 'three';
-import { DoubleSide } from 'three'
+// CrystalBox.jsx
+import React, { useRef, useMemo } from 'react'
+import { useFrame }            from '@react-three/fiber'
+import * as THREE              from 'three'
+import { DoubleSide }          from 'three'
 
-export default function CrystalBox({ zMin = 0, zMax = 4.01 }) {
-  const meshRef   = useRef()
-  const shaderRef = useRef()
+export default function CrystalBox({
+  size = 4.2,              // ancho y alto del cubo original
+  zMin = -size / 2,      // mínimo en Z de las secciones
+  zMax = +size / 2,      // máximo en Z de las secciones
+  thickness = 0.001       // grosor simulado del cristal
+}) {
+  const meshRef = useRef()
 
-  // Altura y posición central
+  // Altura y centro en Z
   const height  = zMax - zMin
   const centerZ = (zMax + zMin) / 2
 
-  // Re-genera la geometría cada vez que `height` cambie
+  // Anchura/profundidad para envolver el cubo
+  const width  = size
+  const depth  = size
+
+  // Geometría regenerada si cambian width, depth o height
   const geometry = useMemo(
-    () => new THREE.BoxGeometry(4.1, 4.1, height*1.1, 64, 64, 64),
-    [height]
+    () => new THREE.BoxGeometry(width, depth, height*1.1, 64, 64, 64),
+    [width, depth, height]
   )
 
+  // Animamos solo el tiempo si tu shader lo necesitara
   useFrame((state) => {
-    if (shaderRef.current) {
-      shaderRef.current.uniforms.uTime.value = state.clock.getElapsedTime()
-    }
-    // Si quisieras rotar la caja:
-    // if (meshRef.current) {
-    //   meshRef.current.rotation.y = state.clock.getElapsedTime() * 0.1
-    // }
+    // por si en el futuro quieres un shaderRef.current.uniforms.uTime
   })
 
   return (
     <mesh
-      castShadow
       ref={meshRef}
       geometry={geometry}
-      position={[0, 0, centerZ]}
+      position={[0, 0, 0]}
+      castShadow
+      renderOrder={1}
+      receiveShadow
     >
       <meshPhysicalMaterial
         color="#AAAAAA"
         roughness={0}
         metalness={0}
         transmission={1}
-        thickness={0.05}
+        thickness={thickness}
         ior={1.0}
         clearcoat={1}
         clearcoatRoughness={0}
         reflectivity={0.001}
         side={DoubleSide}
         transparent
+        depthWrite={false}
       />
     </mesh>
   )
 }
-
-
-
-// export default function CrystalBox({zSize = 4.01}) {
-
-//   function Box() {
-
-//     const meshRef = useRef()
-//     const shaderRef = useRef();
-  
-//     useFrame((state) => {
-//       if (meshRef.current) {
-//         // meshRef.current.rotation.y = state.clock.getElapsedTime() * 0.1
-//         // meshRef.current.rotation.x = state.clock.getElapsedTime() * 0.1 
-//       }
-//       if (shaderRef.current) {
-//         shaderRef.current.uniforms.uTime.value = state.clock.getElapsedTime()
-//       }
-//     })
-
-//     const geometry = useMemo(() => {
-//       return new THREE.BoxGeometry(4.01,4.01,zSize,64,64,64)
-//     }, [])
-  
-//     return (
-//     <mesh castShadow ref={meshRef} geometry={geometry}>
-//     <meshPhysicalMaterial
-//       color="#AAAAAA"
-//       roughness={0}
-//       metalness={0}
-//       transmission={1}        // Mayor transparencia
-//       thickness={0.05}       // Más delgado = menos distorsión
-//       ior={1.0}               // Índice de refracción como el aire para evitar distorsión
-//       clearcoat={1}
-//       clearcoatRoughness={0}
-//       reflectivity={0.001}     // Bajo para no oscurecer
-//       side={DoubleSide}
-//       transparent={true}
-//     />
-//     </mesh>
-
-//     )
-//   }
-
-//   return (Box())
-// }
