@@ -10,6 +10,7 @@ uniform float uDisplaceY;
 uniform float uDisplaceZ;
 uniform float uBlack;
 uniform float uWhite;
+uniform vec3 uSliceOffset;
 
 varying vec2  vUv;
 varying vec3  vPosition;
@@ -35,6 +36,10 @@ float lyapunov(vec3 coord) {
     }
 
     return sum / float(NMAX);
+}
+
+float func(vec3 coord){
+    return coord.x*coord.x - coord.y*coord.y;
 }
 
 vec3 palette(float t) {

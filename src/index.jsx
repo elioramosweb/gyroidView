@@ -12,7 +12,7 @@ root.render(
   <React.StrictMode>
     <Canvas
       shadows
-      camera={{ position: [0, 1, 3], fov: 50 }}
+      camera={{ position: [2, 5, 10], fov: 50 }}
       gl={{ toneMappingExposure: 1.5 }}
       onCreated={({ gl }) => {
         gl.setClearColor('#FFFFFF') // fondo negro
