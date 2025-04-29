@@ -67,8 +67,8 @@ export default function Scene() {
         params={params} />
       <CrystalBox 
         size={4} 
-        zMin={-depth / 2} 
-        zMax={+depth / 2}
+        zMin={0}
+        zMax={10}
         thickness={params.current.thickness} />
     </>
   )

@@ -15,7 +15,7 @@ uniform vec3 uSliceOffset;
 varying vec2  vUv;
 varying vec3  vPosition;
 
-#define NMAX 100
+#define NMAX 10
 
 float lyapunov(vec3 coord) {
     float x = 0.5;

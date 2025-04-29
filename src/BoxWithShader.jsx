@@ -64,6 +64,7 @@ export default function BoxWithShader({ params, size = 4, gap = params.current.g
     })
   })
 
+
   return (
     <>
       {materials.map((mat, i) => (

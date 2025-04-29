@@ -5,7 +5,7 @@ import * as THREE              from 'three'
 import { DoubleSide }          from 'three'
 
 export default function CrystalBox({
-  size = 4.2,              // ancho y alto del cubo original
+  size = 4.,              // ancho y alto del cubo original
   zMin = -size / 2,      // mínimo en Z de las secciones
   zMax = +size / 2,      // máximo en Z de las secciones
   thickness = 0.01       // grosor simulado del cristal
@@ -16,8 +16,8 @@ export default function CrystalBox({
   const centerZ = (zMax + zMin) / 2
 
 
-  const width  = size
-  const depth  = size
+  const width  = size*1.2
+  const depth  = size*1.2
 
 
   const geometry = useMemo(
