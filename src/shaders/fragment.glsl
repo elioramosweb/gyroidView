@@ -69,7 +69,7 @@ void main() {
 
     float dist1 = distance(color,vec3(1.0));
     float dist2 = distance(color,vec3(0.0));
-
+   
     if (dist1 < uWhite)
     {
         discard;

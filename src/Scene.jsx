@@ -16,6 +16,8 @@ const controls = [
   { key: 'nSlices',     min:  1,   max: 100,  step: 1     },
   { key: 'thickness',   min:  0.001, max:1,   step: 0.0001 },
   { key: 'gap',   min:  0.001, max:2,   step: 0.0001 },
+  { key: 'zMin',   min:  0, max:10,   step: 0.1 },
+  { key: 'zMax',   min:  0, max:10,   step: 0.1 }, 
 ]
 
 export default function Scene() {
@@ -31,6 +33,8 @@ export default function Scene() {
     nSlices:    10,
     thickness:  0.01,
     gap:0.01,
+    zMin:0,
+    zMax:4,
   })
 
   useEffect(() => {
@@ -67,8 +71,8 @@ export default function Scene() {
         params={params} />
       <CrystalBox 
         size={4} 
-        zMin={0}
-        zMax={10}
+        zMin={params.current.zMin}
+        zMax={params.current.zMax}
         thickness={params.current.thickness} />
     </>
   )

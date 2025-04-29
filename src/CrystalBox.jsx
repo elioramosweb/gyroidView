@@ -7,8 +7,8 @@ import { DoubleSide }          from 'three'
 export default function CrystalBox({
   size = 4.,              // ancho y alto del cubo original
   zMin = -size / 2,      // mínimo en Z de las secciones
-  zMax = +size / 2,      // máximo en Z de las secciones
-  thickness = 0.01       // grosor simulado del cristal
+  zMax = +size / 2,      // máxim,// grosor simulado del cristal
+  thickness=0.1,
 }) {
   const meshRef = useRef()
 
@@ -21,7 +21,7 @@ export default function CrystalBox({
 
 
   const geometry = useMemo(
-    () => new THREE.BoxGeometry(width, depth, height*1.2, 64, 64, 64),
+    () => new THREE.BoxGeometry(width, depth, height*1.1, 64, 64, 64),
     [width, depth, height]
   )
 
@@ -34,7 +34,7 @@ export default function CrystalBox({
     <mesh
       ref={meshRef}
       geometry={geometry}
-      position={[0, 0, 0]}
+      position={[0, 0, (zMin + zMax)/2]}
       castShadow
       renderOrder={1}
       receiveShadow
