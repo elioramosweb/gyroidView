@@ -49,7 +49,7 @@ export default function Lyapunov3DScene() {
   //   }
   // })
 
-  const cameraZ = 15
+  const cameraZ = 5
   const ambientIntensity = 0.5
   const pointIntensity = 1
   const frameSize = 2
