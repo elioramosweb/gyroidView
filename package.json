@@ -17,6 +17,7 @@
     "@react-three/drei": "^10.0.6",
     "@react-three/fiber": "9.1",
     "dat.gui": "^0.7.9",
+    "html2canvas": "^1.4.1",
     "leva": "^0.10.0",
     "lil-gui": "^0.20.0",
     "react": "19.0",

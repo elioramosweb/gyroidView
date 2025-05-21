@@ -17,6 +17,10 @@ const fragmentShader = `
   precision highp float;
 
   uniform vec3 uCameraPosition;
+
+  uniform  int  uIterMax;
+  uniform  int  uPalette;
+
   uniform float uZoom;
   uniform float uDisplaceX;
   uniform float uDisplaceY;
@@ -31,18 +35,24 @@ const fragmentShader = `
   uniform  float uBlack;
   uniform  float uWhite;
 
+  const int uArray[6] = int[6](1, 1, 2, 1, 2, 0);
+
   varying vec3 vWorldPosition;
 
-  float lyapunov(vec3 coord) {
-    float x = 0.5;
-    float sum = 0.0;
-    for (int i = 0; i < 100; i++) {
-      int pos = int(mod(float(i), 6.0));
-      float r = pos < 2 ? coord.x : (pos < 4 ? coord.y : coord.z);
-      x = r * x * (1.0 - x);
-      sum += log(abs(r - 2.0 * r * x));
-    }
-    return sum / 100.0;
+    vec3 rainbowPalette(float t) {
+    t = clamp(t, 0.0, 1.0);
+    float r = 0.5 + 0.5 * cos(6.2831 * (t + 0.0));
+    float g = 0.5 + 0.5 * cos(6.2831 * (t + 0.33));
+    float b = 0.5 + 0.5 * cos(6.2831 * (t + 0.66));
+    return vec3(r, g, b);
+  }
+
+  vec3 hotPalette(float t) {
+    float r = smoothstep(0.0, 0.5, t); 
+    float g = smoothstep(0.25, 0.75, t); 
+    float b = smoothstep(0.5, 1.0, t);
+    float intensity = mix(0.5, 1.0, t);
+    return vec3(r * intensity, g * intensity, b * intensity);
   }
 
   vec3 turboPalette(float t) {
@@ -53,6 +63,84 @@ const fragmentShader = `
       0.5 + 0.5 * sin(6.2831 * (t + 0.3))
     );
   }
+
+  vec3 viridisPalette(float t) {
+    t = clamp(t, 0.0, 1.0);
+    return vec3(
+      0.267 + 0.643*t - 0.379*t*t,
+      0.004 + 1.370*t - 1.689*t*t,
+      0.329 + 0.861*t - 0.897*t*t
+    );
+  }
+
+  vec3 infernoPalette(float t) {
+    t = clamp(t, 0.0, 1.0);
+    float r = clamp(1.5 * t + 0.05 * sin(20.0 * t), 0.0, 1.0);
+    float g = pow(t, 0.5);
+    float b = 1.0 - t;
+    return vec3(r * 0.9, g * 0.6, b * 0.8);
+  }
+
+  vec3 coolwarmPalette(float t) {
+    t = clamp(t, 0.0, 1.0);
+    return vec3(
+      t,
+      0.5 * sin(3.1415 * t),
+      1.0 - t
+    );
+  }
+
+  vec3 pastelPalette(float t) {
+    t = clamp(t, 0.0, 1.0);
+    return vec3(
+      0.8 + 0.2 * sin(6.2831 * (t + 0.1)),
+      0.7 + 0.3 * sin(6.2831 * (t + 0.4)),
+      0.6 + 0.4 * sin(6.2831 * (t + 0.7))
+    );
+  }
+
+  vec3 getPaletteColor(float t) {
+    if (uPalette == 0) return rainbowPalette(t);
+    else if (uPalette == 1) return hotPalette(t);
+    else if (uPalette == 2) return turboPalette(t);
+    else if (uPalette == 3) return viridisPalette(t);
+    else if (uPalette == 4) return infernoPalette(t);
+    else if (uPalette == 5) return coolwarmPalette(t);
+    else return pastelPalette(t);
+  }
+
+  float lyapunov(vec3 coord) {
+    float x = 0.5;
+    float sum = 0.0;
+    for (int i = 0; i < 50000; i++) {
+      if (i > uIterMax)
+      {
+        break;
+      }
+      int pos = int(mod(float(i), 6.0));
+      float r = pos < 2 ? coord.x : (pos < 4 ? coord.y : coord.z);
+      x = r * x * (1.0 - x);
+      sum += log(abs(r - 2.0 * r * x));
+    }
+    return sum /float(uIterMax);
+  }
+
+    float lyapunov3D(vec3 coord) {
+    float x   = 0.5;
+    float sum = 0.0;
+    for (int i = 0; i < 5000; i++) {
+      if (i >= uIterMax) break;
+      int idx = int(mod(float(i), float(6)));
+      int axis = uArray[idx];
+      float r = (axis == 0) ? coord.x :
+                (axis == 1) ? coord.y :
+                              coord.z;
+      x   = r * x * (1.0 - x);
+      sum += log(abs(r - 2.0 * r * x));
+    }
+    return sum / float(uIterMax);
+  }
+
 
   void main() {
     vec3 rayOrigin = uCameraPosition;
@@ -88,7 +176,7 @@ const fragmentShader = `
 
         // tu exponente + paleta
         float v        = smoothstep(uLypMin, uLypMax, lyapunov(localP));
-        vec3  color    = turboPalette(v);
+        vec3  color    = getPaletteColor(v);
         float alphaSmp = uAlphaMultiplier * v;
 
         // Calcula distancia a blanco/negro en **este color**
@@ -129,7 +217,10 @@ export default function LyapunovVolume() {
     uSteps,
     uAlphaMultiplier,
     uBlack,
-    uWhite
+    uWhite,
+    uIterMax,
+    palette,
+    pattern
   } = useControls('Uniforms',{
     uZoom:            { value: 1.48, min: 0.1, max: 10, step: 0.001 },
     uDisplaceX:       { value: 0.55, min: -10, max: 20, step: 0.001 },
@@ -137,12 +228,26 @@ export default function LyapunovVolume() {
     uDisplaceZ:       { value: 1.90, min: -10, max: 20, step: 0.001 },
     uLypMin:          { value: -1, min: -5, max: 5, step: 0.001 },
     uLypMax:          { value: 1, min: -5, max: 5, step: 0.001 },
+    pattern:          { value: 'AAABBCC' },
     uTMax:            { value: 20, min: 1, max: 100, step: 0.1 },
     uTStep:           { value: 0.01, min: 0.001, max: 0.05, step: 0.001 },
     uSteps:           { value: 500, min: 10, max: 1000, step: 10 },
-    uAlphaMultiplier: { value: 0.05, min: 0.001, max: 0.5, step: 0.001 },
+    uAlphaMultiplier: { value: 0.5, min: 0.001, max: 0.5, step: 0.001 },
     uBlack:           { value: 0.0, min: 0.0, max: 1.0, step: 0.001 },
     uWhite:           { value: 0.0, min: 0.0, max: 1.0, step: 0.001 },
+    uIterMax:         { value: 100,min:100,max:5000,step:10},
+    palette:     {
+      options: {
+        Rainbow: 0,
+        Hot: 1,
+        Turbo: 2,
+        Viridis: 3,
+        Inferno: 4,
+        CoolWarm: 5,
+        Pastel: 6
+      },
+      value: 2
+    },
   })
 
   const uniforms = useMemo(() => ({
@@ -160,9 +265,13 @@ export default function LyapunovVolume() {
     uAlphaMultiplier:  { value: uAlphaMultiplier },
     uWhite:            { value: uWhite},
     uBlack:            { value: uBlack},
+    uIterMax:          { value: uIterMax},
+    uPalette:          { value: palette },
   }), [])
 
-  useFrame(({ clock, camera }) => {
+
+
+useFrame(({ clock, camera }) => {
     if (!shaderRef.current || !meshRef.current) return
     const localCamPos = meshRef.current.worldToLocal(camera.position.clone())
     const u = shaderRef.current.uniforms
@@ -180,6 +289,8 @@ export default function LyapunovVolume() {
     u.uAlphaMultiplier.value = uAlphaMultiplier
     u.uWhite.value = uWhite
     u.uBlack.value = uBlack
+    u.uIterMax.value =  uIterMax
+    u.uPalette.value = palette
   })
 
   return (
