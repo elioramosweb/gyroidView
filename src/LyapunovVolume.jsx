@@ -164,7 +164,7 @@ const fragmentShader = `
       float r = (axis == 0) ? coord.x :
                 (axis == 1) ? coord.y :
                               coord.z;
-      x   = r *x* (1.0 - x) + 0.1*noise(5.0*coord + 0.5*uTime);
+      x   = r *x* (1.0 - x) + 0.05*noise(1.0*coord + 0.5*uTime);
       //x = r*cos(3.14*x);
       sum += log(abs(r - 2.0 * r * x));
     }

@@ -5,6 +5,7 @@ import { OrbitControls } from '@react-three/drei'
 import { useControls, Leva } from 'leva'
 import LyapunovVolume from './LyapunovVolume'
 import FrameBox from './FrameBox'
+import CrystalBox from './CrystalBox' 
 
 export default function Lyapunov3DScene() {
   
@@ -50,8 +51,8 @@ export default function Lyapunov3DScene() {
   // })
 
   const cameraZ = 5
-  const ambientIntensity = 0.5
-  const pointIntensity = 1
+  const ambientIntensity = 1.0
+  const pointIntensity = 0.5
   const frameSize = 2
   const frameColor = '#000000'
 
@@ -81,9 +82,11 @@ export default function Lyapunov3DScene() {
           <ambientLight intensity={ambientIntensity} />
           <pointLight position={[10, 10, 10]} intensity={pointIntensity} castShadow />
 
-          <FrameBox size={frameSize} color={frameColor}>
+          <FrameBox size={frameSize} color={frameColor}> 
             <LyapunovVolume />
-          </FrameBox>
+            <CrystalBox />
+          </FrameBox> 
+
 
           <OrbitControls />
         </Canvas>
