@@ -130,7 +130,7 @@ export default function LyapunovVolume() {
     uAlphaMultiplier,
     uBlack,
     uWhite
-  } = useControls({
+  } = useControls('Uniforms',{
     uZoom:            { value: 1.48, min: 0.1, max: 10, step: 0.001 },
     uDisplaceX:       { value: 0.55, min: -10, max: 20, step: 0.001 },
     uDisplaceY:       { value: 1.90, min: -10, max: 20, step: 0.001 },
