@@ -1,34 +1,23 @@
-import './style.css'
+// // index.jsx
+// import React from 'react'
+// import ReactDOM from 'react-dom/client'
+// import Lyapunov3DScene from './Lyapunov3DScene'
+
+// const root = ReactDOM.createRoot(document.getElementById('root'))
+// root.render(
+//   <React.StrictMode>
+//     <Lyapunov3DScene />
+//   </React.StrictMode>
+// )
+
+// index.jsx
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { Canvas } from '@react-three/fiber'
-import Scene from './Scene'
-import { Environment, OrbitControls,Stage } from '@react-three/drei'
+import Lyapunov3DScene from './Lyapunov3DScene'
 
-
-const root = ReactDOM.createRoot(document.querySelector('#root'))
-
+const root = ReactDOM.createRoot(document.getElementById('root'))
 root.render(
   <React.StrictMode>
-    <Canvas
-      shadows
-      camera={{ position: [2, 5, 10], fov: 50 }}
-      gl={{ toneMappingExposure: 1.5 }}
-      onCreated={({ gl }) => {
-        gl.setClearColor('#FFFFFF') // fondo negro
-      }}
-    >
-      {/* Stage reemplaza ambientLight, directionalLight y Environment */}
-      <Stage
-        environment="studio" // también puedes usar "warehouse", "sunset", etc.
-        intensity={1.0}
-        contactShadow={{ opacity: 0.4, blur: 2 }}
-        adjustCamera={false} 
-        shadows={{ type: 'contact', opacity: 0.4, bias: -0.001 }}
-      >
-      <Scene />
-      </Stage>
-      <OrbitControls />
-    </Canvas>
+    <Lyapunov3DScene />
   </React.StrictMode>
 )
