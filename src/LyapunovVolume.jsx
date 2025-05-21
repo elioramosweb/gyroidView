@@ -1,7 +1,7 @@
 import { useRef, useMemo } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
-import { useControls } from 'leva'
+import { useControls,folder } from 'leva'
 
 const vertexShader = `
   varying vec3 vWorldPosition;
@@ -14,7 +14,9 @@ const vertexShader = `
 `
 
 const fragmentShader = `
-  precision highp float;
+
+  #define  NMAX        5000
+  #define  MAX_PATTERN 32
 
   uniform vec3 uCameraPosition;
 
@@ -35,7 +37,8 @@ const fragmentShader = `
   uniform  float uBlack;
   uniform  float uWhite;
 
-  const int uArray[6] = int[6](1, 1, 2, 1, 2, 0);
+  uniform float uArray[MAX_PATTERN];
+  uniform int   uPatternLength;
 
   varying vec3 vWorldPosition;
 
@@ -109,29 +112,29 @@ const fragmentShader = `
     else return pastelPalette(t);
   }
 
-  float lyapunov(vec3 coord) {
-    float x = 0.5;
-    float sum = 0.0;
-    for (int i = 0; i < 50000; i++) {
-      if (i > uIterMax)
-      {
-        break;
-      }
-      int pos = int(mod(float(i), 6.0));
-      float r = pos < 2 ? coord.x : (pos < 4 ? coord.y : coord.z);
-      x = r * x * (1.0 - x);
-      sum += log(abs(r - 2.0 * r * x));
-    }
-    return sum /float(uIterMax);
-  }
+  // float lyapunov(vec3 coord) {
+  //   float x = 0.5;
+  //   float sum = 0.0;
+  //   for (int i = 0; i < NMAX; i++) {
+  //     if (i > uIterMax)
+  //     {
+  //       break;
+  //     }
+  //     int pos = int(mod(float(i), uArrayLength));
+  //     float r = pos < 2 ? coord.x : (pos < 4 ? coord.y : coord.z);
+  //     x = r * x * (1.0 - x);
+  //     sum += log(abs(r - 2.0 * r * x));
+  //   }
+  //   return sum /float(uIterMax);
+  // }
 
     float lyapunov3D(vec3 coord) {
     float x   = 0.5;
     float sum = 0.0;
-    for (int i = 0; i < 5000; i++) {
+    for (int i = 0; i < NMAX; i++) {
       if (i >= uIterMax) break;
-      int idx = int(mod(float(i), float(6)));
-      int axis = uArray[idx];
+      int idx = int(mod(float(i), float(uPatternLength)));
+      int axis = int(uArray[idx]);
       float r = (axis == 0) ? coord.x :
                 (axis == 1) ? coord.y :
                               coord.z;
@@ -175,7 +178,7 @@ const fragmentShader = `
         vec3 localP = (p + vec3(uDisplaceX, uDisplaceY, uDisplaceZ)) * uZoom;
 
         // tu exponente + paleta
-        float v        = smoothstep(uLypMin, uLypMax, lyapunov(localP));
+        float v        = smoothstep(uLypMin, uLypMax, lyapunov3D(localP));
         vec3  color    = getPaletteColor(v);
         float alphaSmp = uAlphaMultiplier * v;
 
@@ -206,49 +209,68 @@ export default function LyapunovVolume() {
   const meshRef = useRef()
 
   const {
+  
     uZoom,
     uDisplaceX,
     uDisplaceY,
     uDisplaceZ,
+
     uLypMin,
     uLypMax,
+
+   
     uTMax,
     uTStep,
-    uSteps,
     uAlphaMultiplier,
+
+  
+    uIterMax,
+    uSteps,
+
+  
     uBlack,
     uWhite,
-    uIterMax,
     palette,
     pattern
-  } = useControls('Uniforms',{
-    uZoom:            { value: 1.48, min: 0.1, max: 10, step: 0.001 },
-    uDisplaceX:       { value: 0.55, min: -10, max: 20, step: 0.001 },
-    uDisplaceY:       { value: 1.90, min: -10, max: 20, step: 0.001 },
-    uDisplaceZ:       { value: 1.90, min: -10, max: 20, step: 0.001 },
-    uLypMin:          { value: -1, min: -5, max: 5, step: 0.001 },
-    uLypMax:          { value: 1, min: -5, max: 5, step: 0.001 },
-    pattern:          { value: 'AAABBCC' },
-    uTMax:            { value: 20, min: 1, max: 100, step: 0.1 },
-    uTStep:           { value: 0.01, min: 0.001, max: 0.05, step: 0.001 },
-    uSteps:           { value: 500, min: 10, max: 1000, step: 10 },
-    uAlphaMultiplier: { value: 0.5, min: 0.001, max: 0.5, step: 0.001 },
-    uBlack:           { value: 0.0, min: 0.0, max: 1.0, step: 0.001 },
-    uWhite:           { value: 0.0, min: 0.0, max: 1.0, step: 0.001 },
-    uIterMax:         { value: 100,min:100,max:5000,step:10},
-    palette:     {
-      options: {
-        Rainbow: 0,
-        Hot: 1,
-        Turbo: 2,
-        Viridis: 3,
-        Inferno: 4,
-        CoolWarm: 5,
-        Pastel: 6
+  } = useControls({
+    'Transformación espacial': folder({
+      uZoom:      { value: 1.48, min: 0.1, max: 10,   step: 0.001 },
+      uDisplaceX: { value: 0.55, min: -10, max: 20,   step: 0.001 },
+      uDisplaceY: { value: 1.90, min: -10, max: 20,   step: 0.001 },
+      uDisplaceZ: { value: 1.90, min: -10, max: 20,   step: 0.001 },
+    }),
+    'Rango de Lyapunov': folder({
+      uLypMin: { value: -1, min: -5, max: 5, step: 0.001 },
+      uLypMax: { value:  1, min: -5, max: 5, step: 0.001 },
+    }),
+    'Parámetros del Ray-Marching': folder({
+      uTMax:            { value: 20,   min: 1,    max: 100,  step: 0.1   },
+      uTStep:           { value: 0.01, min: 0.001,max: 0.05, step: 0.001 },
+      uAlphaMultiplier: { value: 0.5,  min: 0.001,max: 0.5,  step: 0.001 },
+    }),
+    'Iteraciones': folder({
+      uIterMax: { value: 100, min: 100, max: 5000, step: 10  },
+      uSteps:   { value: 500, min: 10,  max: 1000, step: 10  },
+    }),
+    'Color / Paleta': folder({
+      uBlack:   { value: 0.0, min: 0.0, max: 1.0, step: 0.001 },
+      uWhite:   { value: 0.0, min: 0.0, max: 1.0, step: 0.001 },
+      palette: {
+        options: {
+          Rainbow:  0,
+          Hot:      1,
+          Turbo:    2,
+          Viridis:  3,
+          Inferno:  4,
+          CoolWarm: 5,
+          Pastel:   6
+        },
+        value: 2
       },
-      value: 2
-    },
+      pattern: { value: 'AAABBCC' }
+    })
   })
+
 
   const uniforms = useMemo(() => ({
     uCameraPosition:   { value: new THREE.Vector3() },
@@ -267,6 +289,8 @@ export default function LyapunovVolume() {
     uBlack:            { value: uBlack},
     uIterMax:          { value: uIterMax},
     uPalette:          { value: palette },
+    uArray:            { value: new Array(32).fill(0.0) },
+    uPatternLength:    { value: pattern.length },
   }), [])
 
 
@@ -291,6 +315,20 @@ useFrame(({ clock, camera }) => {
     u.uBlack.value = uBlack
     u.uIterMax.value =  uIterMax
     u.uPalette.value = palette
+
+    const mapping = { A: 0, B: 1, C: 2 }
+
+    const patternArray = pattern
+    .toUpperCase()                      
+    .split('')                          
+    .map(c => mapping[c] ?? 0)  
+
+    for (let i = 0; i < 32; i++) {
+      u.uArray.value[i] = patternArray[i] ?? 0.0 
+    }
+
+    u.uPatternLength.value = patternArray.length
+
   })
 
   return (
