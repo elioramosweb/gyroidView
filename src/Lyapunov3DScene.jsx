@@ -1,7 +1,7 @@
 // Lyapunov3DScene.jsx
 import React from 'react'
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls } from '@react-three/drei'
+import { OrbitControls, Stage, Html} from '@react-three/drei'
 import { useControls, Leva } from 'leva'
 import LyapunovVolume from './LyapunovVolume'
 import FrameBox from './FrameBox'
@@ -78,14 +78,15 @@ export default function Lyapunov3DScene() {
             gl.toneMappingExposure = 1.2
           }}
         >
-          <Stage>
+
+          <Stage shadows={false}>
           <color attach="background" args={['#ffffff']} />
           <ambientLight intensity={ambientIntensity} />
           <pointLight position={[10, 10, 10]} intensity={pointIntensity} castShadow />
 
           <FrameBox size={frameSize} color={frameColor}> 
             <LyapunovVolume />
-            <CrystalBox />
+            {/* <CrystalBox /> */}
           </FrameBox> 
           </Stage>
 

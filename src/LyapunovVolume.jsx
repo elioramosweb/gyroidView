@@ -372,6 +372,7 @@ const fragmentShader = `
   }
 `
 
+
 export default function LyapunovVolume() {
   const shaderRef = useRef()
   const meshRef = useRef()
@@ -448,6 +449,7 @@ export default function LyapunovVolume() {
       uSpeed: {value: 0,min: 0,max:1,step:0.001}
     }),
 
+    
 
   })
 
@@ -520,43 +522,10 @@ useFrame(({ clock, camera }) => {
 
 
 
-  const halfSize = 2.5
-  const minX = (-halfSize + uDisplaceX) * uZoom
-  const maxX = ( halfSize + uDisplaceX) * uZoom
-  const minY = (-halfSize + uDisplaceY) * uZoom
-  const maxY = ( halfSize + uDisplaceY) * uZoom
-  const minZ = (-halfSize + uDisplaceZ) * uZoom
-  const maxZ = ( halfSize + uDisplaceZ) * uZoom
-
   return (
     <>
 
-      <Html fullscreen style={{ pointerEvents: 'none' }}>
-        <div
-          style={{
-            position:       'fixed',      // fijo al viewport, nunca a la cámara
-            top:            '10px',
-            left:           '10px',
-            zIndex:         999,
-            pointerEvents:  'none',
-            background:     'rgba(0,0,0,0.6)',
-            padding:        '0.5em',
-            fontFamily:     'monospace',
-            fontSize:       '0.8em',
-            whiteSpace:     'pre',
-            textAlign:      'left',
-            color:          'white',
-            borderRadius:   '4px'
-          }}
-        >
-          {`Pattern: ${pattern}
-      X: ${minX.toFixed(2)} → ${maxX.toFixed(2)}
-      Y: ${minY.toFixed(2)} → ${maxY.toFixed(2)}
-      Z: ${minZ.toFixed(2)} → ${maxZ.toFixed(2)}`}
-        </div>
-      </Html>
-
-
+     
 
       <color attach="background" args={[0, 0, 0]} />
       <mesh ref={meshRef}>
@@ -570,7 +539,6 @@ useFrame(({ clock, camera }) => {
           side={THREE.BackSide}
         />
       </mesh>
-
 
 
     </>
