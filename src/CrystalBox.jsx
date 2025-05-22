@@ -36,20 +36,22 @@ export default function CrystalBox({
       geometry={geometry}
       position={[0, 0,0]}
     >
-      <meshPhysicalMaterial
-        color="#FFFFFF"
-        roughness={0}
-        metalness={0}
-        transmission={1}
-        thickness={0.4}
-        ior={1.}
-        clearcoat={1}
-        clearcoatRoughness={0}
-        reflectivity={0.01}
-        side={DoubleSide}
-        transparent
-        depthWrite={false}
-      />
+
+
+    <meshPhysicalMaterial
+      transmission={1}          
+      thickness={0.5}            
+      ior={1.52}                
+      roughness={0}              
+      metalness={0}             
+      reflectivity={0.5}         
+      clearcoat={1}              
+      clearcoatRoughness={0}     
+      side={DoubleSide}         
+      transparent={true}
+      depthWrite={false}       
+    />
+
     </mesh>
   )
 }

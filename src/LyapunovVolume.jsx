@@ -36,6 +36,9 @@ const fragmentShader = `
   uniform float uAlphaMultiplier;
   uniform  float uBlack;
   uniform  float uWhite;
+  uniform  float uNoiseLevel;
+  uniform  float uNoiseScale;
+  uniform  float uSpeed;
 
   uniform float uArray[MAX_PATTERN];
   uniform int   uPatternLength;
@@ -112,49 +115,169 @@ const fragmentShader = `
     else return pastelPalette(t);
   }
 
-  // float lyapunov(vec3 coord) {
-  //   float x = 0.5;
-  //   float sum = 0.0;
-  //   for (int i = 0; i < NMAX; i++) {
-  //     if (i > uIterMax)
-  //     {
-  //       break;
-  //     }
-  //     int pos = int(mod(float(i), uArrayLength));
-  //     float r = pos < 2 ? coord.x : (pos < 4 ? coord.y : coord.z);
-  //     x = r * x * (1.0 - x);
-  //     sum += log(abs(r - 2.0 * r * x));
-  //   }
-  //   return sum /float(uIterMax);
-  // }
+//
+// GLSL textureless classic 3D noise "cnoise",
+// with an RSL-style periodic variant "pnoise".
+// Author:  Stefan Gustavson (stefan.gustavson@liu.se)
+// Version: 2024-11-07
+//
+// Many thanks to Ian McEwan of Ashima Arts for the
+// ideas for permutation and gradient selection.
+//
+// Copyright (c) 2011 Stefan Gustavson. All rights reserved.
+// Distributed under the MIT license. See LICENSE file.
+// https://github.com/stegu/webgl-noise
+//
 
-      float mod289(float x){return x - floor(x * (1.0 / 289.0)) * 289.0;}
-      vec4 mod289(vec4 x){return x - floor(x * (1.0 / 289.0)) * 289.0;}
-      vec4 perm(vec4 x){return mod289(((x * 34.0) + 1.0) * x);}
+  vec3 mod289(vec3 x)
+  {
+    return x - floor(x * (1.0 / 289.0)) * 289.0;
+  }
 
-      float noise(vec3 p){
-          vec3 a = floor(p);
-          vec3 d = p - a;
-          d = d * d * (3.0 - 2.0 * d);
+  vec4 mod289(vec4 x)
+  {
+    return x - floor(x * (1.0 / 289.0)) * 289.0;
+  }
 
-          vec4 b = a.xxyy + vec4(0.0, 1.0, 0.0, 1.0);
-          vec4 k1 = perm(b.xyxy);
-          vec4 k2 = perm(k1.xyxy + b.zzww);
+  vec4 permute(vec4 x)
+  {
+    return mod289(((x*34.0)+10.0)*x);
+  }
 
-          vec4 c = k2 + a.zzzz;
-          vec4 k3 = perm(c);
-          vec4 k4 = perm(c + 1.0);
+  vec4 taylorInvSqrt(vec4 r)
+  {
+    return 1.79284291400159 - 0.85373472095314 * r;
+  }
 
-          vec4 o1 = fract(k3 * (1.0 / 41.0));
-          vec4 o2 = fract(k4 * (1.0 / 41.0));
+  vec3 fade(vec3 t) {
+    return t*t*t*(t*(t*6.0-15.0)+10.0);
+  }
 
-          vec4 o3 = o2 * d.z + o1 * (1.0 - d.z);
-          vec2 o4 = o3.yw * d.x + o3.xz * (1.0 - d.x);
+  // Classic Perlin noise
+  float cnoise(vec3 P)
+  {
+    vec3 Pi0 = floor(P); // Integer part for indexing
+    vec3 Pi1 = Pi0 + vec3(1.0); // Integer part + 1
+    Pi0 = mod289(Pi0);
+    Pi1 = mod289(Pi1);
+    vec3 Pf0 = fract(P); // Fractional part for interpolation
+    vec3 Pf1 = Pf0 - vec3(1.0); // Fractional part - 1.0
+    vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
+    vec4 iy = vec4(Pi0.yy, Pi1.yy);
+    vec4 iz0 = Pi0.zzzz;
+    vec4 iz1 = Pi1.zzzz;
 
-          return o4.y * d.y + o4.x * (1.0 - d.y);
-      }
+    vec4 ixy = permute(permute(ix) + iy);
+    vec4 ixy0 = permute(ixy + iz0);
+    vec4 ixy1 = permute(ixy + iz1);
 
-    float lyapunov3D(vec3 coord) {
+    vec4 gx0 = ixy0 * (1.0 / 7.0);
+    vec4 gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;
+    gx0 = fract(gx0);
+    vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);
+    vec4 sz0 = step(gz0, vec4(0.0));
+    gx0 -= sz0 * (step(0.0, gx0) - 0.5);
+    gy0 -= sz0 * (step(0.0, gy0) - 0.5);
+
+    vec4 gx1 = ixy1 * (1.0 / 7.0);
+    vec4 gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;
+    gx1 = fract(gx1);
+    vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);
+    vec4 sz1 = step(gz1, vec4(0.0));
+    gx1 -= sz1 * (step(0.0, gx1) - 0.5);
+    gy1 -= sz1 * (step(0.0, gy1) - 0.5);
+
+    vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);
+    vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);
+    vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);
+    vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);
+    vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);
+    vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);
+    vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);
+    vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);
+
+    vec4 norm0 = taylorInvSqrt(vec4(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));
+    vec4 norm1 = taylorInvSqrt(vec4(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));
+
+    float n000 = norm0.x * dot(g000, Pf0);
+    float n010 = norm0.y * dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));
+    float n100 = norm0.z * dot(g100, vec3(Pf1.x, Pf0.yz));
+    float n110 = norm0.w * dot(g110, vec3(Pf1.xy, Pf0.z));
+    float n001 = norm1.x * dot(g001, vec3(Pf0.xy, Pf1.z));
+    float n011 = norm1.y * dot(g011, vec3(Pf0.x, Pf1.yz));
+    float n101 = norm1.z * dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));
+    float n111 = norm1.w * dot(g111, Pf1);
+
+    vec3 fade_xyz = fade(Pf0);
+    vec4 n_z = mix(vec4(n000, n100, n010, n110), vec4(n001, n101, n011, n111), fade_xyz.z);
+    vec2 n_yz = mix(n_z.xy, n_z.zw, fade_xyz.y);
+    float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x); 
+    return 2.2 * n_xyz;
+  }
+
+  // Classic Perlin noise, periodic variant
+  float pnoise(vec3 P, vec3 rep)
+  {
+    vec3 Pi0 = mod(floor(P), rep); // Integer part, modulo period
+    vec3 Pi1 = mod(Pi0 + vec3(1.0), rep); // Integer part + 1, mod period
+    Pi0 = mod289(Pi0);
+    Pi1 = mod289(Pi1);
+    vec3 Pf0 = fract(P); // Fractional part for interpolation
+    vec3 Pf1 = Pf0 - vec3(1.0); // Fractional part - 1.0
+    vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
+    vec4 iy = vec4(Pi0.yy, Pi1.yy);
+    vec4 iz0 = Pi0.zzzz;
+    vec4 iz1 = Pi1.zzzz;
+
+    vec4 ixy = permute(permute(ix) + iy);
+    vec4 ixy0 = permute(ixy + iz0);
+    vec4 ixy1 = permute(ixy + iz1);
+
+    vec4 gx0 = ixy0 * (1.0 / 7.0);
+    vec4 gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;
+    gx0 = fract(gx0);
+    vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);
+    vec4 sz0 = step(gz0, vec4(0.0));
+    gx0 -= sz0 * (step(0.0, gx0) - 0.5);
+    gy0 -= sz0 * (step(0.0, gy0) - 0.5);
+
+    vec4 gx1 = ixy1 * (1.0 / 7.0);
+    vec4 gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;
+    gx1 = fract(gx1);
+    vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);
+    vec4 sz1 = step(gz1, vec4(0.0));
+    gx1 -= sz1 * (step(0.0, gx1) - 0.5);
+    gy1 -= sz1 * (step(0.0, gy1) - 0.5);
+
+    vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);
+    vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);
+    vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);
+    vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);
+    vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);
+    vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);
+    vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);
+    vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);
+
+    vec4 norm0 = taylorInvSqrt(vec4(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));
+    vec4 norm1 = taylorInvSqrt(vec4(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));
+
+    float n000 = norm0.x * dot(g000, Pf0);
+    float n010 = norm0.y * dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));
+    float n100 = norm0.z * dot(g100, vec3(Pf1.x, Pf0.yz));
+    float n110 = norm0.w * dot(g110, vec3(Pf1.xy, Pf0.z));
+    float n001 = norm1.x * dot(g001, vec3(Pf0.xy, Pf1.z));
+    float n011 = norm1.y * dot(g011, vec3(Pf0.x, Pf1.yz));
+    float n101 = norm1.z * dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));
+    float n111 = norm1.w * dot(g111, Pf1);
+
+    vec3 fade_xyz = fade(Pf0);
+    vec4 n_z = mix(vec4(n000, n100, n010, n110), vec4(n001, n101, n011, n111), fade_xyz.z);
+    vec2 n_yz = mix(n_z.xy, n_z.zw, fade_xyz.y);
+    float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x); 
+    return 2.2 * n_xyz;
+  }
+
+  float lyapunov3D(vec3 coord) {
     float x   = 0.5;
     float sum = 0.0;
     for (int i = 0; i < NMAX; i++) {
@@ -164,15 +287,29 @@ const fragmentShader = `
       float r = (axis == 0) ? coord.x :
                 (axis == 1) ? coord.y :
                               coord.z;
-      x   = r *x* (1.0 - x) + 0.05*noise(1.0*coord + 0.5*uTime);
-      //x = r*cos(3.14*x);
+      x   = r *x* (1.0 - x*x) + uNoiseLevel*cnoise(uNoiseScale*coord + uSpeed*uTime);
       sum += log(abs(r - 2.0 * r * x));
     }
     return sum / float(uIterMax);
   }
 
 
+  // Función auxiliar
+  float densityAt(vec3 P) {
+    return smoothstep(uLypMin, uLypMax, lyapunov3D(P));
+  }
+
+  vec3 computeNormal(vec3 P) {
+    float eps = 0.001;
+    float dx = densityAt(P + vec3(eps,0,0)) - densityAt(P - vec3(eps,0,0));
+    float dy = densityAt(P + vec3(0,eps,0)) - densityAt(P - vec3(0,eps,0));
+    float dz = densityAt(P + vec3(0,0,eps)) - densityAt(P - vec3(0,0,eps));
+    return normalize(vec3(dx,dy,dz));
+  }
+
+
   void main() {
+
     vec3 rayOrigin = uCameraPosition;
     vec3 rayDir = normalize(vWorldPosition - rayOrigin);
 
@@ -200,18 +337,15 @@ const fragmentShader = `
         if (i >= uSteps) break;
         if (t > min(tExit, uTMax)) break;
 
-        // Punto de muestreo
+       
         vec3 p      = rayOrigin + t * rayDir;
         vec3 localP = (p + vec3(uDisplaceX, uDisplaceY, uDisplaceZ)) * uZoom;
 
-        float n = 0.0*noise(localP*2.0 + uTime*0.5);
-
-        // tu exponente + paleta
-        float v        = smoothstep(uLypMin, uLypMax, n + lyapunov3D(localP));
+        float v        = smoothstep(uLypMin, uLypMax, lyapunov3D(localP));
         vec3  color    = getPaletteColor(v);
         float alphaSmp = uAlphaMultiplier * v;
 
-        // Calcula distancia a blanco/negro en **este color**
+     
         float dW = distance(color, vec3(1.0));
         float dB = distance(color, vec3(0.0));
 
@@ -220,12 +354,16 @@ const fragmentShader = `
             alphaSmp = 0.0;
         }
 
-        // Ahora sí acumula front-to-back  
+
         colorSum += (1.0 - totalAlpha) * color * alphaSmp;
         totalAlpha += (1.0 - totalAlpha) * alphaSmp;
 
         if (totalAlpha > 0.95) break;
-        t += uTStep;
+
+        float r = fract(sin(dot(gl_FragCoord.xy ,vec2(12.9898,78.233))) * 43758.5453);
+        float tStepJitter = uTStep * (1.0 + (r - 0.5) * 0.5);
+        t += tStepJitter;
+
      }
 
 
@@ -260,7 +398,12 @@ export default function LyapunovVolume() {
     uBlack,
     uWhite,
     palette,
-    pattern
+    pattern,
+
+    uNoiseLevel,
+    uNoiseScale,
+    uSpeed
+
   } = useControls({
     'Transformación espacial': folder({
       uZoom:      { value: 1.48, min: 0.1, max: 10,   step: 0.001 },
@@ -297,7 +440,14 @@ export default function LyapunovVolume() {
         value: 2
       },
       pattern: { value: 'AAABBCC' }
-    })
+    }),
+    'Ruido': folder({
+      uNoiseLevel: { value: 1, min: 0, max: 2, step: 0.1 },
+      uNoiseScale: { value: 1, min: 0, max: 10, step: 0.1 },
+      uSpeed: {value: 0,min: 0,max:1,step:0.001}
+    }),
+
+
   })
 
 
@@ -320,6 +470,9 @@ export default function LyapunovVolume() {
     uPalette:          { value: palette },
     uArray:            { value: new Array(32).fill(0.0) },
     uPatternLength:    { value: pattern.length },
+    uNoiseLevel:       { value: uNoiseLevel},
+    uNoiseScale:       { value: uNoiseScale},
+    uSpeed:            { value: uSpeed},
   }), [])
 
 
@@ -357,6 +510,10 @@ useFrame(({ clock, camera }) => {
     }
 
     u.uPatternLength.value = patternArray.length
+
+    u.uNoiseLevel.value = uNoiseLevel
+    u.uNoiseScale.value = uNoiseScale
+    u.uSpeed.value = uSpeed
 
   })
 
