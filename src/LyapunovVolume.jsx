@@ -1,7 +1,8 @@
-import { useRef, useMemo } from 'react'
+import { useRef, useMemo,useState,useEffect } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { useControls,folder } from 'leva'
+import { Html } from '@react-three/drei'
 
 const vertexShader = `
   varying vec3 vWorldPosition;
@@ -18,7 +19,7 @@ const fragmentShader = `
   #define  NMAX        5000
   #define  MAX_PATTERN 32
 
-  uniform vec3 uCameraPosition;
+  uniform vec3  uCameraPosition;
 
   uniform  int  uIterMax;
   uniform  int  uPalette;
@@ -517,8 +518,46 @@ useFrame(({ clock, camera }) => {
 
   })
 
+
+
+  const halfSize = 2.5
+  const minX = (-halfSize + uDisplaceX) * uZoom
+  const maxX = ( halfSize + uDisplaceX) * uZoom
+  const minY = (-halfSize + uDisplaceY) * uZoom
+  const maxY = ( halfSize + uDisplaceY) * uZoom
+  const minZ = (-halfSize + uDisplaceZ) * uZoom
+  const maxZ = ( halfSize + uDisplaceZ) * uZoom
+
   return (
     <>
+
+      <Html fullscreen style={{ pointerEvents: 'none' }}>
+        <div
+          style={{
+            position:       'fixed',      // fijo al viewport, nunca a la cámara
+            top:            '10px',
+            left:           '10px',
+            zIndex:         999,
+            pointerEvents:  'none',
+            background:     'rgba(0,0,0,0.6)',
+            padding:        '0.5em',
+            fontFamily:     'monospace',
+            fontSize:       '0.8em',
+            whiteSpace:     'pre',
+            textAlign:      'left',
+            color:          'white',
+            borderRadius:   '4px'
+          }}
+        >
+          {`Pattern: ${pattern}
+      X: ${minX.toFixed(2)} → ${maxX.toFixed(2)}
+      Y: ${minY.toFixed(2)} → ${maxY.toFixed(2)}
+      Z: ${minZ.toFixed(2)} → ${maxZ.toFixed(2)}`}
+        </div>
+      </Html>
+
+
+
       <color attach="background" args={[0, 0, 0]} />
       <mesh ref={meshRef}>
         <boxGeometry args={[5,5,5,100,100,100]} />
@@ -531,6 +570,9 @@ useFrame(({ clock, camera }) => {
           side={THREE.BackSide}
         />
       </mesh>
+
+
+
     </>
   )
 }
