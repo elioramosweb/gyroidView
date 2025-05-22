@@ -17,7 +17,7 @@ export default function CrystalBox({
 
 
   const width  = 2.
-  const depth  = 2.
+  const depth  = 2.0
 
 
   const geometry = useMemo(
