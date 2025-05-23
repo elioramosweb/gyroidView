@@ -39,12 +39,13 @@ export default function CrystalBox({
 
 
     <meshPhysicalMaterial
-      transmission={1}          
-      thickness={0.5}            
+      transmission={1}    
+      color="#ffffff"      
+      thickness={1}            
       ior={1.52}                
       roughness={0}              
       metalness={0}             
-      reflectivity={0.5}         
+      reflectivity={1}         
       clearcoat={1}              
       clearcoatRoughness={0}     
       side={DoubleSide}         

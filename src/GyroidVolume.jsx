@@ -16,33 +16,43 @@ const vertexShader = `
 
 const fragmentShader = `
 
-  #define  NMAX        5000
-  #define  MAX_PATTERN 32
+  #define NMAX        5000
 
-  uniform vec3  uCameraPosition;
 
-  uniform  int  uIterMax;
-  uniform  int  uPalette;
+  uniform vec3 uCameraPosition;
+
+  uniform int  uIterMax;
+  uniform int  uPalette;
+
 
   uniform float uZoom;
   uniform float uDisplaceX;
   uniform float uDisplaceY;
   uniform float uDisplaceZ;
-  uniform float uLypMin;
-  uniform float uLypMax;
+
+  uniform float uGyMin;
+  uniform float uGyMax;
+
+  uniform float uA;
+  uniform float uB;
+  uniform float uC;
+
+  uniform float uPhix;
+  uniform float uPhiy;
+  uniform float uPhiz;
+
+  
   uniform float uTime;
   uniform float uTMax;
   uniform float uTStep;
-  uniform int uSteps;
+  uniform int   uSteps;
+  
   uniform float uAlphaMultiplier;
-  uniform  float uBlack;
-  uniform  float uWhite;
-  uniform  float uNoiseLevel;
-  uniform  float uNoiseScale;
-  uniform  float uSpeed;
-
-  uniform float uArray[MAX_PATTERN];
-  uniform int   uPatternLength;
+  uniform float uBlack;
+  uniform float uWhite;
+  uniform float uNoiseLevel;
+  uniform float uNoiseScale;
+  uniform float uSpeed;
 
   varying vec3 vWorldPosition;
 
@@ -106,6 +116,11 @@ const fragmentShader = `
     );
   }
 
+  vec3 grayPalette(float t) {
+      t = clamp(t, 0.0, 1.0);
+      return vec3(t);
+  }
+
   vec3 getPaletteColor(float t) {
     if (uPalette == 0) return rainbowPalette(t);
     else if (uPalette == 1) return hotPalette(t);
@@ -113,6 +128,7 @@ const fragmentShader = `
     else if (uPalette == 3) return viridisPalette(t);
     else if (uPalette == 4) return infernoPalette(t);
     else if (uPalette == 5) return coolwarmPalette(t);
+    else if (uPalette == 6) return grayPalette(t);
     else return pastelPalette(t);
   }
 
@@ -278,34 +294,17 @@ const fragmentShader = `
     return 2.2 * n_xyz;
   }
 
-  float lyapunov3D(vec3 coord) {
-    float x   = 0.5;
-    float sum = 0.0;
-    for (int i = 0; i < NMAX; i++) {
-      if (i >= uIterMax) break;
-      int idx = int(mod(float(i), float(uPatternLength)));
-      int axis = int(uArray[idx]);
-      float r = (axis == 0) ? coord.x :
-                (axis == 1) ? coord.y :
-                              coord.z;
-      x   = r *x* (1.0 - x*x) + uNoiseLevel*cnoise(uNoiseScale*coord + uSpeed*uTime);
-      sum += log(abs(r - 2.0 * r * x));
-    }
-    return sum / float(uIterMax);
-  }
-
-
-  // Función auxiliar
-  float densityAt(vec3 P) {
-    return smoothstep(uLypMin, uLypMax, lyapunov3D(P));
-  }
-
-  vec3 computeNormal(vec3 P) {
-    float eps = 0.001;
-    float dx = densityAt(P + vec3(eps,0,0)) - densityAt(P - vec3(eps,0,0));
-    float dy = densityAt(P + vec3(0,eps,0)) - densityAt(P - vec3(0,eps,0));
-    float dz = densityAt(P + vec3(0,0,eps)) - densityAt(P - vec3(0,0,eps));
-    return normalize(vec3(dx,dy,dz));
+  float gyroid(vec3 coord)
+  {
+     float x = coord.x;
+     float y = coord.y;
+     float z = coord.z;
+     //float n = uNoiseLevel*cnoise(uNoiseScale*coord + uSpeed*uTime);
+     float n = uSpeed*uTime;
+     float term1 = sin(uA*x + uPhix + n)*cos(uA*y + uPhix + n);
+     float term2 = sin(uA*y + uPhix + n)*cos(uA*z + uPhix + n);
+     float term3 = sin(uA*z + uPhix + n)*cos(uA*x + uPhix + n);
+     return term1 + term2 + term3;
   }
 
 
@@ -342,7 +341,7 @@ const fragmentShader = `
         vec3 p      = rayOrigin + t * rayDir;
         vec3 localP = (p + vec3(uDisplaceX, uDisplaceY, uDisplaceZ)) * uZoom;
 
-        float v        = smoothstep(uLypMin, uLypMax, lyapunov3D(localP));
+        float v        = smoothstep(uGyMin, uGyMax, gyroid(localP));
         vec3  color    = getPaletteColor(v);
         float alphaSmp = uAlphaMultiplier * v;
 
@@ -384,8 +383,14 @@ export default function LyapunovVolume() {
     uDisplaceY,
     uDisplaceZ,
 
-    uLypMin,
-    uLypMax,
+    uGyMin,
+    uGyMax,
+    uA,
+    uB,
+    uC,
+    uPhix,
+    uPhiy,
+    uPhiz,
 
    
     uTMax,
@@ -400,7 +405,6 @@ export default function LyapunovVolume() {
     uBlack,
     uWhite,
     palette,
-    pattern,
 
     uNoiseLevel,
     uNoiseScale,
@@ -408,14 +412,21 @@ export default function LyapunovVolume() {
 
   } = useControls({
     'Transformación espacial': folder({
-      uZoom:      { value: 1.48, min: 0.1, max: 10,   step: 0.001 },
-      uDisplaceX: { value: 0.55, min: -10, max: 20,   step: 0.001 },
-      uDisplaceY: { value: 1.90, min: -10, max: 20,   step: 0.001 },
-      uDisplaceZ: { value: 1.90, min: -10, max: 20,   step: 0.001 },
+      uZoom:      { value: 1.48, min: 0.1, max: 10,   step: 1 },
+      uDisplaceX: { value: 0.55, min: -10, max: 20,   step: 1 },
+      uDisplaceY: { value: 1.90, min: -10, max: 20,   step: 1 },
+      uDisplaceZ: { value: 1.90, min: -10, max: 20,   step: 1 },
     }),
-    'Rango de Lyapunov': folder({
-      uLypMin: { value: -1, min: -5, max: 5, step: 0.001 },
-      uLypMax: { value:  1, min: -5, max: 5, step: 0.001 },
+    'Parámetros del Gyroide': folder({
+      uGyMin: { value: -1, min: -5, max: 5, step: 0.001 },
+      uGyMax: { value:  1, min: -5, max: 5, step: 0.001 },
+      uA:     { value: -1, min: -5, max: 5, step: 0.001 },
+      uB:     { value:  1, min: -5, max: 5, step: 0.001 },
+      uC:     { value:  1, min: -5, max: 5, step: 0.001 },
+      uPhix:  { value:  1, min: -5, max: 5, step: 0.001 },
+      uPhiy:  { value:  1, min: -5, max: 5, step: 0.001 },
+      uPhiz:  { value:  1, min: -5, max: 5, step: 0.001 },
+
     }),
     'Parámetros del Ray-Marching': folder({
       uTMax:            { value: 20,   min: 1,    max: 100,  step: 0.1   },
@@ -437,11 +448,11 @@ export default function LyapunovVolume() {
           Viridis:  3,
           Inferno:  4,
           CoolWarm: 5,
-          Pastel:   6
+          Pastel:   6,
+          Gray:     7,
         },
         value: 2
       },
-      pattern: { value: 'AAABBCC' }
     }),
     'Ruido': folder({
       uNoiseLevel: { value: 1, min: 0, max: 2, step: 0.1 },
@@ -460,8 +471,14 @@ export default function LyapunovVolume() {
     uDisplaceX:        { value: uDisplaceX },
     uDisplaceY:        { value: uDisplaceY },
     uDisplaceZ:        { value: uDisplaceZ },
-    uLypMin:           { value: uLypMin },
-    uLypMax:           { value: uLypMax },
+    uGyMin:            { value: uGyMin },
+    uGyMax:            { value: uGyMax },
+    uA:                { value: uA},
+    uB:                { value: uB},
+    uC:                { value: uC},
+    uPhix:             { value: uPhix},
+    uPhiy:             { value: uPhiy},
+    uPhiz:             { value: uPhiz},
     uTime:             { value: 0 },
     uTMax:             { value: uTMax },
     uTStep:            { value: uTStep },
@@ -471,8 +488,6 @@ export default function LyapunovVolume() {
     uBlack:            { value: uBlack},
     uIterMax:          { value: uIterMax},
     uPalette:          { value: palette },
-    uArray:            { value: new Array(32).fill(0.0) },
-    uPatternLength:    { value: pattern.length },
     uNoiseLevel:       { value: uNoiseLevel},
     uNoiseScale:       { value: uNoiseScale},
     uSpeed:            { value: uSpeed},
@@ -490,8 +505,14 @@ useFrame(({ clock, camera }) => {
     u.uDisplaceX.value = uDisplaceX
     u.uDisplaceY.value = uDisplaceY
     u.uDisplaceZ.value = uDisplaceZ
-    u.uLypMin.value = uLypMin
-    u.uLypMax.value = uLypMax
+    u.uGyMin.value = uGyMin
+    u.uGyMax.value = uGyMax
+    u.uA.value     = uA
+    u.uB.value     = uB
+    u.uC.value     = uC
+    u.uPhix.value     = uPhix
+    u.uPhiy.value     = uPhiy
+    u.uPhiz.value     = uPhiz
     u.uTMax.value = uTMax
     u.uTStep.value = uTStep
     u.uSteps.value = uSteps
@@ -500,20 +521,6 @@ useFrame(({ clock, camera }) => {
     u.uBlack.value = uBlack
     u.uIterMax.value =  uIterMax
     u.uPalette.value = palette
-
-    const mapping = { A: 0, B: 1, C: 2 }
-
-    const patternArray = pattern
-    .toUpperCase()                      
-    .split('')                          
-    .map(c => mapping[c] ?? 0)  
-
-    for (let i = 0; i < 32; i++) {
-      u.uArray.value[i] = patternArray[i] ?? 0.0 
-    }
-
-    u.uPatternLength.value = patternArray.length
-
     u.uNoiseLevel.value = uNoiseLevel
     u.uNoiseScale.value = uNoiseScale
     u.uSpeed.value = uSpeed
@@ -530,6 +537,7 @@ useFrame(({ clock, camera }) => {
       <color attach="background" args={[0, 0, 0]} />
       <mesh ref={meshRef}>
         <boxGeometry args={[5,5,5,100,100,100]} />
+        {/* <sphereGeometry args={[1,100,100]}/> */}
         <shaderMaterial
           ref={shaderRef}
           vertexShader={vertexShader}

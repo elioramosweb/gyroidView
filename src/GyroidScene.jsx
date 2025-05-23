@@ -3,11 +3,11 @@ import React from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Stage, Html} from '@react-three/drei'
 import { useControls, Leva } from 'leva'
-import LyapunovVolume from './LyapunovVolume'
+import GyroidVolume from './GyroidVolume'
 import FrameBox from './FrameBox'
 import CrystalBox from './CrystalBox' 
 
-export default function Lyapunov3DScene() {
+export default function GyroidScene() {
   
   const {
     cameraZ,
@@ -85,8 +85,8 @@ export default function Lyapunov3DScene() {
           <pointLight position={[10, 10, 10]} intensity={pointIntensity} castShadow />
 
           <FrameBox size={frameSize} color={frameColor}> 
-            <LyapunovVolume />
-            {/* <CrystalBox /> */}
+            <GyroidVolume />
+            <CrystalBox />
           </FrameBox> 
           </Stage>
 

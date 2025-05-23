@@ -13,11 +13,11 @@
 // index.jsx
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import Lyapunov3DScene from './Lyapunov3DScene'
+import GyroidScene from './GyroidScene'
 
 const root = ReactDOM.createRoot(document.getElementById('root'))
 root.render(
   <React.StrictMode>
-    <Lyapunov3DScene />
+    <GyroidScene />
   </React.StrictMode>
 )
