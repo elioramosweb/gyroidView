@@ -16,8 +16,8 @@ export default function CrystalBox({
   const centerZ = (zMax + zMin) / 2
 
 
-  const width  = 2.
-  const depth  = 2.0
+  const width  = 2.1
+  const depth  = 2.1
 
 
   const geometry = useMemo(

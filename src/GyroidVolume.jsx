@@ -54,6 +54,11 @@ const fragmentShader = `
   uniform float uNoiseScale;
   uniform float uSpeed;
 
+  uniform float uAmbientStrength; 
+  uniform vec3 uLightDir;       
+  uniform float uDiffuseStrength; 
+
+
   varying vec3 vWorldPosition;
 
     vec3 rainbowPalette(float t) {
@@ -299,8 +304,8 @@ const fragmentShader = `
      float x = coord.x;
      float y = coord.y;
      float z = coord.z;
-     //float n = uNoiseLevel*cnoise(uNoiseScale*coord + uSpeed*uTime);
-     float n = uSpeed*uTime;
+     float n = uNoiseLevel*cnoise(uNoiseScale*coord + uSpeed*uTime);
+     //float n = uSpeed*uTime;
      float term1 = sin(uA*x + uPhix + n)*cos(uA*y + uPhix + n);
      float term2 = sin(uA*y + uPhix + n)*cos(uA*z + uPhix + n);
      float term3 = sin(uA*z + uPhix + n)*cos(uA*x + uPhix + n);
@@ -343,9 +348,29 @@ const fragmentShader = `
 
         float v        = smoothstep(uGyMin, uGyMax, gyroid(localP));
         vec3  color    = getPaletteColor(v);
+        //vec3 color = vec3(1.0,0.0,0.0);
         float alphaSmp = uAlphaMultiplier * v;
 
-     
+        // luz ambiental 
+
+        vec3 ambient = uAmbientStrength*color;
+
+        
+        // Sombreado difuso 
+
+        float eps = 0.002;
+        vec3 grad = vec3(
+          gyroid(localP + vec3(eps,0,0)) - gyroid(localP - vec3(eps,0,0)),
+          gyroid(localP + vec3(0,eps,0)) - gyroid(localP - vec3(0,eps,0)),
+          gyroid(localP + vec3(0,0,eps)) - gyroid(localP - vec3(0,0,eps))
+        );
+        vec3 normal = normalize(grad);
+    
+        float diff = max(dot(normal, normalize(uLightDir)), 0.0);
+        vec3 diffuse = uDiffuseStrength * diff * color;
+
+        vec3 lighting = ambient + diffuse;
+
         float dW = distance(color, vec3(1.0));
         float dB = distance(color, vec3(0.0));
 
@@ -355,7 +380,9 @@ const fragmentShader = `
         }
 
 
-        colorSum += (1.0 - totalAlpha) * color * alphaSmp;
+        //colorSum += (1.0 - totalAlpha) * color * alphaSmp;
+        colorSum += (1.0 - totalAlpha) * lighting * alphaSmp;
+
         totalAlpha += (1.0 - totalAlpha) * alphaSmp;
 
         if (totalAlpha > 0.95) break;
@@ -369,6 +396,8 @@ const fragmentShader = `
 
     gl_FragColor = vec4(colorSum, totalAlpha);
   }
+
+
 `
 
 
@@ -408,25 +437,24 @@ export default function LyapunovVolume() {
 
     uNoiseLevel,
     uNoiseScale,
-    uSpeed
+    uSpeed,
+
+    uAmbientStrength,
+    uLightDir,
+    uDiffuseStrength,
 
   } = useControls({
     'Transformación espacial': folder({
-      uZoom:      { value: 1.48, min: 0.1, max: 10,   step: 1 },
-      uDisplaceX: { value: 0.55, min: -10, max: 20,   step: 1 },
-      uDisplaceY: { value: 1.90, min: -10, max: 20,   step: 1 },
-      uDisplaceZ: { value: 1.90, min: -10, max: 20,   step: 1 },
+      uZoom:      { value: 4, min: 0.1, max: 10,   step: 1 },
+      uDisplaceX: { value: 0, min: -10, max: 20,   step: 1 },
+      uDisplaceY: { value: 0, min: -10, max: 20,   step: 1 },
+      uDisplaceZ: { value: 0, min: -10, max: 20,   step: 1 },
     }),
     'Parámetros del Gyroide': folder({
       uGyMin: { value: -1, min: -5, max: 5, step: 0.001 },
       uGyMax: { value:  1, min: -5, max: 5, step: 0.001 },
       uA:     { value: -1, min: -5, max: 5, step: 0.001 },
-      uB:     { value:  1, min: -5, max: 5, step: 0.001 },
-      uC:     { value:  1, min: -5, max: 5, step: 0.001 },
       uPhix:  { value:  1, min: -5, max: 5, step: 0.001 },
-      uPhiy:  { value:  1, min: -5, max: 5, step: 0.001 },
-      uPhiz:  { value:  1, min: -5, max: 5, step: 0.001 },
-
     }),
     'Parámetros del Ray-Marching': folder({
       uTMax:            { value: 20,   min: 1,    max: 100,  step: 0.1   },
@@ -439,7 +467,7 @@ export default function LyapunovVolume() {
     }),
     'Color / Paleta': folder({
       uBlack:   { value: 0.0, min: 0.0, max: 1.0, step: 0.001 },
-      uWhite:   { value: 0.0, min: 0.0, max: 1.0, step: 0.001 },
+      uWhite:   { value: 1.0, min: 0.0, max: 1.0, step: 0.001 },
       palette: {
         options: {
           Rainbow:  0,
@@ -459,7 +487,11 @@ export default function LyapunovVolume() {
       uNoiseScale: { value: 1, min: 0, max: 10, step: 0.1 },
       uSpeed: {value: 0,min: 0,max:1,step:0.001}
     }),
-
+    'Parámetros de Luz': folder({
+      uAmbientStrength:  { value: 1.0, min: 0, max: 1, step: 0.1 },
+      uLightDir:         { value: new THREE.Vector3(1,1,1).normalize() },
+      uDiffuseStrength:  { value: 1.0, min: 0, max: 1, step: 0.1 },
+    }),
     
 
   })
@@ -474,11 +506,7 @@ export default function LyapunovVolume() {
     uGyMin:            { value: uGyMin },
     uGyMax:            { value: uGyMax },
     uA:                { value: uA},
-    uB:                { value: uB},
-    uC:                { value: uC},
     uPhix:             { value: uPhix},
-    uPhiy:             { value: uPhiy},
-    uPhiz:             { value: uPhiz},
     uTime:             { value: 0 },
     uTMax:             { value: uTMax },
     uTStep:            { value: uTStep },
@@ -491,6 +519,9 @@ export default function LyapunovVolume() {
     uNoiseLevel:       { value: uNoiseLevel},
     uNoiseScale:       { value: uNoiseScale},
     uSpeed:            { value: uSpeed},
+    uAmbientStrength:  { value: uAmbientStrength },
+    uLightDir:         { value: new THREE.Vector3()},
+    uDiffuseStrength:  { value: uDiffuseStrength}
   }), [])
 
 
@@ -508,11 +539,7 @@ useFrame(({ clock, camera }) => {
     u.uGyMin.value = uGyMin
     u.uGyMax.value = uGyMax
     u.uA.value     = uA
-    u.uB.value     = uB
-    u.uC.value     = uC
     u.uPhix.value     = uPhix
-    u.uPhiy.value     = uPhiy
-    u.uPhiz.value     = uPhiz
     u.uTMax.value = uTMax
     u.uTStep.value = uTStep
     u.uSteps.value = uSteps
@@ -524,6 +551,9 @@ useFrame(({ clock, camera }) => {
     u.uNoiseLevel.value = uNoiseLevel
     u.uNoiseScale.value = uNoiseScale
     u.uSpeed.value = uSpeed
+    u.uAmbientStrength.value = uAmbientStrength
+    u.uLightDir.value = uLightDir
+    u.uDiffuseStrength.value = uDiffuseStrength
 
   })
 

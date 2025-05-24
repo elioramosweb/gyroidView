@@ -80,7 +80,7 @@ export default function GyroidScene() {
         >
 
           <Stage shadows={false}>
-          <color attach="background" args={['#ffffff']} />
+          <color attach="background" args={['#ff0000']} />
           <ambientLight intensity={ambientIntensity} />
           <pointLight position={[10, 10, 10]} intensity={pointIntensity} castShadow />
 
