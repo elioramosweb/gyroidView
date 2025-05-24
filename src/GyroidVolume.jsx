@@ -135,7 +135,7 @@ const fragmentShader = `
     else if (uPalette == 3) return viridisPalette(t);
     else if (uPalette == 4) return infernoPalette(t);
     else if (uPalette == 5) return coolwarmPalette(t);
-    else if (uPalette == 6) return grayPalette(t);
+    else if (uPalette == 6) return pastelPalette(t);
     else return pastelPalette(t);
   }
 
@@ -452,7 +452,7 @@ export default function LyapunovVolume() {
 
   } = useControls({
     'Transformación Espacial': folder({
-      uZoom:      { value: 4, min: 0.1, max: 10,   step: 1 },
+      uZoom:      { value: 5, min: 0.1, max: 10,   step: 1 },
       uDisplaceX: { value: 0, min: -10, max: 20,   step: 1 },
       uDisplaceY: { value: 0, min: -10, max: 20,   step: 1 },
       uDisplaceZ: { value: 0, min: -10, max: 20,   step: 1 },
@@ -533,36 +533,36 @@ export default function LyapunovVolume() {
 
 
 
-useFrame(({ clock, camera }) => {
-    if (!shaderRef.current || !meshRef.current) return
-    const localCamPos = meshRef.current.worldToLocal(camera.position.clone())
-    const u = shaderRef.current.uniforms
-    u.uTime.value = clock.getElapsedTime()
-    u.uCameraPosition.value.copy(localCamPos)
-    u.uZoom.value = uZoom
-    u.uDisplaceX.value = uDisplaceX
-    u.uDisplaceY.value = uDisplaceY
-    u.uDisplaceZ.value = uDisplaceZ
-    u.uGyMin.value = uGyMin
-    u.uGyMax.value = uGyMax
-    u.uA.value     = uA
-    u.uPhix.value     = uPhix
-    u.uTMax.value = uTMax
-    u.uTStep.value = uTStep
-    u.uSteps.value = uSteps
-    u.uAlphaMultiplier.value = uAlphaMultiplier
-    u.uWhite.value = uWhite
-    u.uBlack.value = uBlack
-    u.uIterMax.value =  uIterMax
-    u.uPalette.value = palette
-    u.uNoiseLevel.value = uNoiseLevel
-    u.uNoiseScale.value = uNoiseScale
-    u.uSpeed.value = uSpeed
-    u.uAmbientStrength.value = uAmbientStrength
-    u.uLightDir.value = uLightDir
-    u.uDiffuseStrength.value = uDiffuseStrength
+  useFrame(({ clock, camera }) => {
+      if (!shaderRef.current || !meshRef.current) return
+      const localCamPos = meshRef.current.worldToLocal(camera.position.clone())
+      const u = shaderRef.current.uniforms
+      u.uTime.value = clock.getElapsedTime()
+      u.uCameraPosition.value.copy(localCamPos)
+      u.uZoom.value = uZoom
+      u.uDisplaceX.value = uDisplaceX
+      u.uDisplaceY.value = uDisplaceY
+      u.uDisplaceZ.value = uDisplaceZ
+      u.uGyMin.value = uGyMin
+      u.uGyMax.value = uGyMax
+      u.uA.value     = uA
+      u.uPhix.value     = uPhix
+      u.uTMax.value = uTMax
+      u.uTStep.value = uTStep
+      u.uSteps.value = uSteps
+      u.uAlphaMultiplier.value = uAlphaMultiplier
+      u.uWhite.value = uWhite
+      u.uBlack.value = uBlack
+      u.uIterMax.value =  uIterMax
+      u.uPalette.value = palette
+      u.uNoiseLevel.value = uNoiseLevel
+      u.uNoiseScale.value = uNoiseScale
+      u.uSpeed.value = uSpeed
+      u.uAmbientStrength.value = uAmbientStrength
+      u.uLightDir.value = uLightDir
+      u.uDiffuseStrength.value = uDiffuseStrength
 
-  })
+    })
 
 
 
