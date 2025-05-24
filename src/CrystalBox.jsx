@@ -16,8 +16,8 @@ export default function CrystalBox({
   const centerZ = (zMax + zMin) / 2
 
 
-  const width  = 2.1
-  const depth  = 2.1
+  const width  = 2.
+  const depth  = 2.
 
 
   const geometry = useMemo(
@@ -40,8 +40,8 @@ export default function CrystalBox({
 
     <meshPhysicalMaterial
       transmission={1}    
-      color="#ffffff"      
-      thickness={1}            
+      color="#dddddd"      
+      thickness={0.1}            
       ior={1.52}                
       roughness={0}              
       metalness={0}             

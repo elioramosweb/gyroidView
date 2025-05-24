@@ -61,7 +61,9 @@ const fragmentShader = `
 
   varying vec3 vWorldPosition;
 
-    vec3 rainbowPalette(float t) {
+// paletas de colores 
+
+  vec3 rainbowPalette(float t) {
     t = clamp(t, 0.0, 1.0);
     float r = 0.5 + 0.5 * cos(6.2831 * (t + 0.0));
     float g = 0.5 + 0.5 * cos(6.2831 * (t + 0.33));
@@ -238,6 +240,7 @@ const fragmentShader = `
   }
 
   // Classic Perlin noise, periodic variant
+
   float pnoise(vec3 P, vec3 rep)
   {
     vec3 Pi0 = mod(floor(P), rep); // Integer part, modulo period
@@ -299,13 +302,15 @@ const fragmentShader = `
     return 2.2 * n_xyz;
   }
 
+// función general para generar gyroide
+// https://en.wikipedia.org/wiki/Gyroid
+
   float gyroid(vec3 coord)
   {
      float x = coord.x;
      float y = coord.y;
      float z = coord.z;
      float n = uNoiseLevel*cnoise(uNoiseScale*coord + uSpeed*uTime);
-     //float n = uSpeed*uTime;
      float term1 = sin(uA*x + uPhix + n)*cos(uA*y + uPhix + n);
      float term2 = sin(uA*y + uPhix + n)*cos(uA*z + uPhix + n);
      float term3 = sin(uA*z + uPhix + n)*cos(uA*x + uPhix + n);
@@ -336,13 +341,13 @@ const fragmentShader = `
     float totalAlpha = 0.0;
     vec3 colorSum = vec3(0.0);
 
-   
-    for (int i = 0; i < 500; i++) 
+
+    for (int i = 0; i < 500; i++)
     {
         if (i >= uSteps) break;
         if (t > min(tExit, uTMax)) break;
 
-       
+
         vec3 p      = rayOrigin + t * rayDir;
         vec3 localP = (p + vec3(uDisplaceX, uDisplaceY, uDisplaceZ)) * uZoom;
 
@@ -371,6 +376,8 @@ const fragmentShader = `
 
         vec3 lighting = ambient + diffuse;
 
+        // filtrado de colores blancos o negros 
+
         float dW = distance(color, vec3(1.0));
         float dB = distance(color, vec3(0.0));
 
@@ -380,7 +387,7 @@ const fragmentShader = `
         }
 
 
-        //colorSum += (1.0 - totalAlpha) * color * alphaSmp;
+      
         colorSum += (1.0 - totalAlpha) * lighting * alphaSmp;
 
         totalAlpha += (1.0 - totalAlpha) * alphaSmp;
@@ -444,7 +451,7 @@ export default function LyapunovVolume() {
     uDiffuseStrength,
 
   } = useControls({
-    'Transformación espacial': folder({
+    'Transformación Espacial': folder({
       uZoom:      { value: 4, min: 0.1, max: 10,   step: 1 },
       uDisplaceX: { value: 0, min: -10, max: 20,   step: 1 },
       uDisplaceY: { value: 0, min: -10, max: 20,   step: 1 },
@@ -561,8 +568,6 @@ useFrame(({ clock, camera }) => {
 
   return (
     <>
-
-     
 
       <color attach="background" args={[0, 0, 0]} />
       <mesh ref={meshRef}>

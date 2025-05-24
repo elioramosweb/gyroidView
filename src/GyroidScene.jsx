@@ -1,8 +1,9 @@
 // Lyapunov3DScene.jsx
 import React from 'react'
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Stage, Html} from '@react-three/drei'
+import { OrbitControls, Stage, Html,Backdrop} from '@react-three/drei'
 import { useControls, Leva } from 'leva'
+import * as THREE from 'three'
 import GyroidVolume from './GyroidVolume'
 import FrameBox from './FrameBox'
 import CrystalBox from './CrystalBox' 
@@ -50,16 +51,10 @@ export default function GyroidScene() {
     }
   })
 
-  // const cameraZ = 5
-  // const ambientIntensity = 1.0
-  // const pointIntensity = 0.5
-  // const frameSize = 2
-  // const frameColor = '#000000'
-
   return (
     <>
       <Leva collapsed={false} />
-
+  
       <div
         style={{
           width: '100vw',
@@ -69,30 +64,38 @@ export default function GyroidScene() {
           overflow: 'visible'
         }}
       >
-        <Canvas
-          camera={{ position: [0, 0, cameraZ], fov: 50 }}
-          gl={{ antialias: true }}
-          dpr={[1, 1.5]}
-          style={{ width: '100%', height: '100%' }}
-          onCreated={({ gl }) => {
-            gl.toneMappingExposure = 1.2
-          }}
-        >
-
-          <Stage shadows={false}>
-          <color attach="background" args={['#ff0000']} />
+      <Canvas
+        camera={{ position: [0, 0, cameraZ], fov: 50 }}
+        gl={{ antialias: true }}
+        dpr={[1, 1.5]}
+        style={{ width: '100%', height: '100%' }}
+        onCreated={({ gl }) => {
+          gl.toneMappingExposure = 1.2
+          gl.toneMapping = THREE.ACESFilmicToneMapping
+          gl.shadowMap.enabled = true
+          gl.shadowMap.type = THREE.PCFSoftShadowMap
+        }}
+      >
+        <Stage environment="studio" shadows={{ type: 'soft' }}>
+          <color attach="background" args={['#ff0000']} /> 
           <ambientLight intensity={ambientIntensity} />
-          <pointLight position={[10, 10, 10]} intensity={pointIntensity} castShadow />
+          <pointLight
+            position={[10, 10, 10]}
+            intensity={pointIntensity}
+            castShadow
+            shadow-mapSize-width={1024}
+            shadow-mapSize-height={1024}
+            shadow-radius={6}
+            shadow-bias={-0.001}
+          />
+          <GyroidVolume />
+          <CrystalBox />
+        </Stage>
 
-          <FrameBox size={frameSize} color={frameColor}> 
-            <GyroidVolume />
-            <CrystalBox />
-          </FrameBox> 
-          </Stage>
-
-          <OrbitControls />
-        </Canvas>
+        <OrbitControls />
+      </Canvas>
       </div>
     </>
   )
+
 }
