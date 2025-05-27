@@ -65,31 +65,32 @@ export default function GyroidScene() {
         }}
       >
       <Canvas
+        shadows
         camera={{ position: [0, 0, cameraZ], fov: 50 }}
         gl={{ antialias: true }}
         dpr={[1, 1.5]}
         style={{ width: '100%', height: '100%' }}
+        
         onCreated={({ gl }) => {
-          gl.toneMappingExposure = 1.2
-          gl.toneMapping = THREE.ACESFilmicToneMapping
-          gl.shadowMap.enabled = true
-          gl.shadowMap.type = THREE.PCFSoftShadowMap
+          // gl.toneMappingExposure = 1.2
+          // gl.toneMapping = THREE.ACESFilmicToneMapping
+          // gl.shadowMap.enabled = true
+          // gl.shadowMap.type = THREE.PCFSoftShadowMap
         }}
       >
-        <Stage environment="studio" shadows={{ type: 'soft' }}>
-          <color attach="background" args={['#ff0000']} /> 
-          <ambientLight intensity={ambientIntensity} />
-          <pointLight
-            position={[10, 10, 10]}
-            intensity={pointIntensity}
-            castShadow
-            shadow-mapSize-width={1024}
-            shadow-mapSize-height={1024}
-            shadow-radius={6}
-            shadow-bias={-0.001}
-          />
+        {/* <color attach="background" args={['#000000']} /> */}
+        <Stage
+            environment="warehouse"
+            intensity={0.1}
+            background={false}
+            //adjustCamera={false}
+            shadows={null}
+            // floor={{ color: '#eeeeee', offset: 0 }}
+          >
+          <ambientLight intensity={0.8} />
+          <pointLight position={[10, 10, 10]} intensity={0.2} />
           <GyroidVolume />
-          <CrystalBox />
+          {/* <CrystalBox/> */}
         </Stage>
 
         <OrbitControls />

@@ -16,7 +16,8 @@ const vertexShader = `
 
 const fragmentShader = `
 
-  #define NMAX        5000
+  #define NMAX  5000
+  #define PI    3.14159265359
 
 
   uniform vec3 uCameraPosition;
@@ -32,14 +33,9 @@ const fragmentShader = `
 
   uniform float uGyMin;
   uniform float uGyMax;
-
   uniform float uA;
-  uniform float uB;
-  uniform float uC;
-
   uniform float uPhix;
-  uniform float uPhiy;
-  uniform float uPhiz;
+  uniform float uExp;
 
   
   uniform float uTime;
@@ -54,14 +50,14 @@ const fragmentShader = `
   uniform float uNoiseScale;
   uniform float uSpeed;
 
-  uniform float uAmbientStrength; 
-  uniform vec3 uLightDir;       
-  uniform float uDiffuseStrength; 
+  uniform float uAmbientStrength;
+  uniform vec3 uLightDir;
+  uniform float uDiffuseStrength;
 
 
   varying vec3 vWorldPosition;
 
-// paletas de colores 
+// paletas de colores
 
   vec3 rainbowPalette(float t) {
     t = clamp(t, 0.0, 1.0);
@@ -72,8 +68,8 @@ const fragmentShader = `
   }
 
   vec3 hotPalette(float t) {
-    float r = smoothstep(0.0, 0.5, t); 
-    float g = smoothstep(0.25, 0.75, t); 
+    float r = smoothstep(0.0, 0.5, t);
+    float g = smoothstep(0.25, 0.75, t);
     float b = smoothstep(0.5, 1.0, t);
     float intensity = mix(0.5, 1.0, t);
     return vec3(r * intensity, g * intensity, b * intensity);
@@ -302,22 +298,30 @@ const fragmentShader = `
     return 2.2 * n_xyz;
   }
 
-// función general para generar gyroide
-// https://en.wikipedia.org/wiki/Gyroid
+  // función general para generar gyroide
+  // https://en.wikipedia.org/wiki/Gyroid
 
-  float gyroid(vec3 coord)
-  {
-     float x = coord.x;
-     float y = coord.y;
-     float z = coord.z;
-     float n = uNoiseLevel*cnoise(uNoiseScale*coord + uSpeed*uTime);
-     float term1 = sin(uA*x + uPhix + n)*cos(uA*y + uPhix + n);
-     float term2 = sin(uA*y + uPhix + n)*cos(uA*z + uPhix + n);
-     float term3 = sin(uA*z + uPhix + n)*cos(uA*x + uPhix + n);
-     return term1 + term2 + term3;
+  float gyroid(vec3 coord) {
+    // ruido global
+
+    float n = uNoiseLevel * cnoise(uNoiseScale * coord + uSpeed * uTime);
+    
+
+    float ax = uA * coord.x + uPhix + n;
+    float ay = uA * coord.y + uPhix + n; 
+    float az = uA * coord.z + uPhix + n; 
+
+    float sx = sin(ax);
+    float sy = sin(ay);
+    float sz = sin(az);
+    float cx = cos(ax);
+    float cy = cos(ay);
+    float cz = cos(az);
+    
+    // suma gyroidal
+
+    return sx * cy +  sy * cz +  sz * cx;
   }
-
-
   void main() {
 
     vec3 rayOrigin = uCameraPosition;
@@ -351,7 +355,10 @@ const fragmentShader = `
         vec3 p      = rayOrigin + t * rayDir;
         vec3 localP = (p + vec3(uDisplaceX, uDisplaceY, uDisplaceZ)) * uZoom;
 
-        float v        = smoothstep(uGyMin, uGyMax, gyroid(localP));
+        float gy = gyroid(localP);
+
+        float v        = smoothstep(uGyMin, uGyMax, gy);
+        //vec3 color     = vec3(gy);
         vec3  color    = getPaletteColor(v);
         //vec3 color = vec3(1.0,0.0,0.0);
         float alphaSmp = uAlphaMultiplier * v;
@@ -422,12 +429,7 @@ export default function LyapunovVolume() {
     uGyMin,
     uGyMax,
     uA,
-    uB,
-    uC,
     uPhix,
-    uPhiy,
-    uPhiz,
-
    
     uTMax,
     uTStep,
@@ -452,10 +454,10 @@ export default function LyapunovVolume() {
 
   } = useControls({
     'Transformación Espacial': folder({
-      uZoom:      { value: 5, min: 0.1, max: 10,   step: 1 },
-      uDisplaceX: { value: 0, min: -10, max: 20,   step: 1 },
-      uDisplaceY: { value: 0, min: -10, max: 20,   step: 1 },
-      uDisplaceZ: { value: 0, min: -10, max: 20,   step: 1 },
+      uZoom:      { value: 5, min: 0.1, max: 10,   step: 0.5 },
+      uDisplaceX: { value: 0, min: -10, max: 20,   step: 0.5 },
+      uDisplaceY: { value: 0, min: -10, max: 20,   step: 0.5 },
+      uDisplaceZ: { value: 0, min: -10, max: 20,   step: 0.5},
     }),
     'Parámetros del Gyroide': folder({
       uGyMin: { value: -1, min: -5, max: 5, step: 0.001 },
@@ -490,14 +492,14 @@ export default function LyapunovVolume() {
       },
     }),
     'Ruido': folder({
-      uNoiseLevel: { value: 1, min: 0, max: 2, step: 0.1 },
-      uNoiseScale: { value: 1, min: 0, max: 10, step: 0.1 },
-      uSpeed: {value: 0,min: 0,max:1,step:0.001}
+      uNoiseLevel: { value: 0, min: 0, max: 2, step: 0.1 },
+      uNoiseScale: { value: 0, min: 0, max: 10, step: 0.1 },
+      uSpeed:       {value: 0,min: 0,max:1,step:0.001}
     }),
     'Parámetros de Luz': folder({
-      uAmbientStrength:  { value: 1.0, min: 0, max: 1, step: 0.1 },
+      uAmbientStrength:  { value: 1.0, min: 0, max: 2, step: 0.1 },
       uLightDir:         { value: new THREE.Vector3(1,1,1).normalize() },
-      uDiffuseStrength:  { value: 1.0, min: 0, max: 1, step: 0.1 },
+      uDiffuseStrength:  { value: 1.0, min: 0, max: 2, step: 0.1 },
     }),
     
 
@@ -528,7 +530,7 @@ export default function LyapunovVolume() {
     uSpeed:            { value: uSpeed},
     uAmbientStrength:  { value: uAmbientStrength },
     uLightDir:         { value: new THREE.Vector3()},
-    uDiffuseStrength:  { value: uDiffuseStrength}
+    uDiffuseStrength:  { value: uDiffuseStrength},
   }), [])
 
 
@@ -571,7 +573,7 @@ export default function LyapunovVolume() {
 
       <color attach="background" args={[0, 0, 0]} />
       <mesh ref={meshRef}>
-        <boxGeometry args={[5,5,5,100,100,100]} />
+        <boxGeometry args={[5,5,5,64,64,64]} />
         {/* <sphereGeometry args={[1,100,100]}/> */}
         <shaderMaterial
           ref={shaderRef}
